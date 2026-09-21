@@ -1,0 +1,337 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getCollection, render } from "astro:content";
+import { getImage } from "astro:assets";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Separator from "../components/Separator.astro";
+import AlbumGrid from "../components/AlbumGrid.astro";
+
+export const getStaticPaths = async () => {
+  // Fetch all artists from the 'artists' collection
+  const artists = await getCollection("artists");
+
+  // Map over the artists to generate paths for each artist's page
+  const paths = artists.map((artist) => {
+    return {
+      params: { artist_id: artist.id }, // URL parameter for the artist's ID
+      props: { artists, artist }, // Pass the full artist and all artists as props
+    };
+  });
+
+  // Return the generated paths to Astro for static page generation
+  return paths;
+};
+
+type Props = {
+  artists: CollectionEntry<"artists">[]; // Array of all artists in the collection
+  artist: CollectionEntry<"artists">; // Current artist being rendered
+};
+
+const { artists, artist } = Astro.props; // Extract the artists list and current artist from the props
+
+// Extract the ID of the current artist
+const artist_id = artist.id;
+
+// Find the index of the current artist in the artists array
+const currentArtistIndex = artists.findIndex((a) => a.id === artist_id);
+
+// Calculate the index of the "next" artist in the array (wrap around if at the last artist)
+const nextArtistIndex = (currentArtistIndex + 1) % artists.length;
+
+// Get the "next" artist based on the calculated index
+const nextArtist = artists[nextArtistIndex];
+
+// Fetch all albums that belong to the current artist
+const albums = await getCollection(
+  "albums",
+  ({ data }) => data.artist.id === artist_id,
+);
+
+// Build two variants per gallery image: a square thumbnail and a large view
+const gallery = artist.data.gallery ?? [];
+const photos = await Promise.all(
+  gallery.map(async (photo) => {
+    const thumb = await getImage({
+      src: photo.src,
+      width: 600,
+      height: 600,
+      fit: "cover",
+      format: "webp",
+    });
+    const full = await getImage({
+      src: photo.src,
+      width: 1800,
+      format: "webp",
+    });
+    return { thumb: thumb.src, full: full.src, alt: photo.alt ?? "" };
+  }),
+);
+
+// Render the content of the current artist (e.g., markdown or MDX)
+const { Content } = await render(artist);
+---
+
+<BaseLayout title={artist.data.name}>
+  <section>
+    <header class="title-header">
+      <h2>
+        {artist.data.stage_name}
+        <span class="faded">({artist.data.name})</span>
+      </h2>
+      <div>
+        <a class="back" href="/">View all</a>
+        <span class="faded">/</span>
+        <a href={`/${nextArtist.id}`}>Next artist</a>
+      </div>
+    </header>
+    <Separator />
+    <div class="content-wrap">
+      <img
+        class="image fade-in"
+        src={artist.data.image.src}
+        alt={artist.data.image.alt}
+      />
+      <div class="content">
+        <h3>Biography</h3>
+        <Content />
+        <dl>
+          <dt>Genre</dt><dd>{artist.data.genre}</dd>
+        </dl>
+      </div>
+      {
+        albums.length > 0 && (
+          <div class="albums">
+            <h3>Releases</h3>
+            <AlbumGrid albums={albums} />
+          </div>
+        )
+      }
+      {
+        photos.length > 0 && (
+          <div class="gallery">
+            <h3>Photos</h3>
+            <div class="gallery-grid" data-gallery>
+              {photos.map((photo, i) => (
+                <button
+                  type="button"
+                  class="gallery-item"
+                  data-index={i}
+                  data-full={photo.full}
+                  data-alt={photo.alt}
+                  aria-label={photo.alt || `Photo ${i + 1}`}
+                >
+                  <img class="fade-in" src={photo.thumb} alt={photo.alt} loading="lazy" decoding="async" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  {
+    photos.length > 0 && (
+      <dialog class="lightbox" data-lightbox>
+        <button type="button" class="lb-close" data-lb-close aria-label="Close">&times;</button>
+        <button type="button" class="lb-nav lb-prev" data-lb-prev aria-label="Previous">&#8249;</button>
+        <img class="lb-image" data-lb-image src="" alt="" />
+        <button type="button" class="lb-nav lb-next" data-lb-next aria-label="Next">&#8250;</button>
+        <p class="lb-caption" data-lb-caption />
+      </dialog>
+    )
+  }
+</BaseLayout>
+
+<script>
+  function initGallery() {
+    const grid = document.querySelector<HTMLElement>("[data-gallery]");
+    const dialog = document.querySelector<HTMLDialogElement>("[data-lightbox]");
+    if (!grid || !dialog) return;
+
+    const img = dialog.querySelector<HTMLImageElement>("[data-lb-image]")!;
+    const caption = dialog.querySelector<HTMLElement>("[data-lb-caption]")!;
+    const items = Array.from(
+      grid.querySelectorAll<HTMLButtonElement>(".gallery-item"),
+    );
+    let current = 0;
+
+    const show = (index: number) => {
+      current = (index + items.length) % items.length;
+      const item = items[current];
+      img.src = item.dataset.full ?? "";
+      img.alt = item.dataset.alt ?? "";
+      caption.textContent = item.dataset.alt ?? "";
+    };
+
+    items.forEach((item, i) => {
+      item.addEventListener("click", () => {
+        show(i);
+        dialog.showModal();
+      });
+    });
+
+    dialog
+      .querySelector("[data-lb-prev]")
+      ?.addEventListener("click", () => show(current - 1));
+    dialog
+      .querySelector("[data-lb-next]")
+      ?.addEventListener("click", () => show(current + 1));
+    dialog
+      .querySelector("[data-lb-close]")
+      ?.addEventListener("click", () => dialog.close());
+
+    // Click on the backdrop closes the dialog
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+
+    // Arrow keys navigate (Escape is handled natively by <dialog>)
+    dialog.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") show(current - 1);
+      if (e.key === "ArrowRight") show(current + 1);
+    });
+  }
+
+  // Runs on first load and after every View Transitions navigation
+  document.addEventListener("astro:page-load", initGallery);
+</script>
+
+<style>
+  .content-wrap {
+    grid-template-areas: "img" "content" "albums" "gallery";
+    grid-template-columns: 100%;
+    @media screen and (min-width: 44em) {
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "img img" "content albums" "gallery gallery";
+    }
+    @media screen and (min-width: 50em) {
+      grid-template-columns: 30vw 1fr 170px;
+      grid-template-areas: "img content albums" "gallery gallery gallery";
+    }
+  }
+  .albums {
+    grid-area: albums;
+  }
+  .gallery {
+    grid-area: gallery;
+    margin-top: 2.5rem;
+  }
+
+  /* Instagram-style square grid */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 1rem;
+  }
+  .gallery-item {
+    all: unset;
+    display: block;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+  }
+  .gallery-item:hover img,
+  .gallery-item:focus-visible img {
+    transform: scale(1.04);
+    opacity: 0.85;
+  }
+  .gallery-item:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    border: none;
+    padding: 0;
+    background: transparent;
+    max-width: 100vw;
+    max-height: 100vh;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    place-items: center;
+    color: #fff;
+  }
+  .lightbox[open] {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: 1fr auto;
+    gap: 1rem;
+    padding: 1.5rem;
+    box-sizing: border-box;
+  }
+  .lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.92);
+  }
+  .lb-image {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 100%;
+    max-height: 85vh;
+    object-fit: contain;
+    justify-self: center;
+    align-self: center;
+  }
+  .lb-caption {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: center;
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin: 0;
+  }
+  .lb-nav,
+  .lb-close {
+    all: unset;
+    cursor: pointer;
+    color: #fff;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    padding: 0.5rem 1rem;
+    font-size: 2.5rem;
+    line-height: 1;
+    align-self: center;
+  }
+  .lb-nav:hover,
+  .lb-close:hover {
+    opacity: 1;
+  }
+  .lb-prev {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .lb-next {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .lb-close {
+    position: fixed;
+    top: 0.5rem;
+    right: 1rem;
+    font-size: 2rem;
+    z-index: 1;
+  }
+
+  @media screen and (max-width: 44em) {
+    .lb-nav {
+      font-size: 2rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
+
+  .content p:last-child {
+    margin-top: 2.5rem;
+    display: flex;
+  }
+</style>
