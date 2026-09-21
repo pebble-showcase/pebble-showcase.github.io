@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import type { ImageMetadata } from "astro";
 import { getCollection, render } from "astro:content";
 import { getImage } from "astro:assets";
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -51,15 +52,16 @@ const albums = await getCollection(
 const gallery = artist.data.gallery ?? [];
 const photos = await Promise.all(
   gallery.map(async (photo) => {
+    const src = photo.src as ImageMetadata;
     const thumb = await getImage({
-      src: photo.src,
+      src,
       width: 600,
       height: 600,
       fit: "cover",
       format: "webp",
     });
     const full = await getImage({
-      src: photo.src,
+      src,
       width: 1800,
       format: "webp",
     });
