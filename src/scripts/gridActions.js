@@ -73,12 +73,12 @@ const shuffleGrid = () => {
   }
 };
 
-/* Sort grid items alphabetically by 'data-stagename' */
+/* Sort grid items by 'data-name' date, newest first */
 const sortGrid = () => {
   const sortedItems = gridItems.sort((a, b) => {
-    const nameA = a.getAttribute('data-stagename').toLowerCase();
-    const nameB = b.getAttribute('data-stagename').toLowerCase();
-    return nameA.localeCompare(nameB);
+    const dateA = new Date(a.getAttribute('data-name').trim());
+    const dateB = new Date(b.getAttribute('data-name').trim());
+    return dateB - dateA;
   });
   if (gridContainer) {
     gridContainer.innerHTML = '';

@@ -6,19 +6,36 @@ image:
   src: '/images/artists/harock.webp'
   alt: 'Teros in an intricate, textured jacket, exuding a mysterious and introspective aura, captured in moody, cinematic lighting'
 gallery:
-  - src: "../../assets/images/KakaoTalk_Photo_2026-09-21-10-17-53.jpeg"
-    alt: "출차주의"
-  - src: "../../assets/images/KakaoTalk_Photo_2026-09-21-10-19-53.jpeg"
-    alt: "출차주의"
-  - src: "../../assets/images/KakaoTalk_Photo_2026-09-21-10-20-10.jpeg"
-    alt: "출차주의"
-  - src: "../../assets/images/KakaoTalk_Photo_2026-09-21-10-20-44.jpeg"
-    alt: "출차주의"
-  - src: "../../assets/images/KakaoTalk_Photo_2026-09-21-10-20-59.jpeg"
-    alt: "출차주의"
+  - src: "../../assets/harock/harock14.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock1.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock2.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock3.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock4.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock5.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock6.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock7.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock8.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock9.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock10.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock11.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock12.jpg"
+    alt: "하락"
+  - src: "../../assets/harock/harock13.jpg"
+    alt: "하락"
 ---
 
-### SETLIST
 1. Jackie and Wilson
 2. Whiskey n Whiskey
 3. What time is it now?
