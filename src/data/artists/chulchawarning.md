@@ -18,7 +18,7 @@ gallery:
     alt: "출차주의"
 ---
 
-1. Les Vegues
+1. Les Vagues
 2. Halo
 3. Teeth
 4. Mozambique drill
